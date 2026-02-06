@@ -4,6 +4,8 @@ export type AdminLoginResponse = {
   username: string;
 };
 
+export type AdminRegisterResponse = AdminLoginResponse;
+
 export type AdminUser = {
   id: number;
   username: string;

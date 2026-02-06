@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiRequest } from "@/lib/api";
-import type { AdminLoginResponse } from "@/lib/types";
+import type { AdminLoginResponse, AdminRegisterResponse } from "@/lib/types";
 
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,16 +19,26 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const data = await apiRequest<AdminLoginResponse>("/admin/login", {
-        method: "POST",
-        body: JSON.stringify({ username, password }),
-      });
+      const endpoint = mode === "login" ? "/admin/login" : "/admin/register";
+      const data = await apiRequest<AdminLoginResponse | AdminRegisterResponse>(
+        endpoint,
+        {
+          method: "POST",
+          body: JSON.stringify({ username, password }),
+        }
+      );
 
       localStorage.setItem("admin_id", String(data.admin_id));
       localStorage.setItem("admin_username", data.username);
       router.replace("/admin");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "登录失败");
+      setError(
+        err instanceof Error
+          ? err.message
+          : mode === "login"
+          ? "登录失败"
+          : "注册失败"
+      );
     } finally {
       setLoading(false);
     }
@@ -39,8 +50,35 @@ export default function LoginPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-slate-900">Admin 管理系统</h1>
           <p className="mt-2 text-sm text-slate-500">
-            使用管理员账号登录后进入后台管理。
+            {mode === "login"
+              ? "使用管理员账号登录后进入后台管理。"
+              : "注册后自动进入后台管理。"}
           </p>
+        </div>
+
+        <div className="mb-6 flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-sm">
+          <button
+            type="button"
+            className={`flex-1 rounded-md px-3 py-2 transition ${
+              mode === "login"
+                ? "bg-white text-slate-900 shadow"
+                : "text-slate-500"
+            }`}
+            onClick={() => setMode("login")}
+          >
+            登录
+          </button>
+          <button
+            type="button"
+            className={`flex-1 rounded-md px-3 py-2 transition ${
+              mode === "register"
+                ? "bg-white text-slate-900 shadow"
+                : "text-slate-500"
+            }`}
+            onClick={() => setMode("register")}
+          >
+            注册
+          </button>
         </div>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
@@ -79,7 +117,13 @@ export default function LoginPage() {
             className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
             disabled={loading}
           >
-            {loading ? "登录中..." : "登录"}
+            {loading
+              ? mode === "login"
+                ? "登录中..."
+                : "注册中..."
+              : mode === "login"
+              ? "登录"
+              : "注册"}
           </button>
         </form>
       </div>
